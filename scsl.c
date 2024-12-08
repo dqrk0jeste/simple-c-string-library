@@ -1,5 +1,4 @@
-#include "scsl.h"
-#include "scsl_internal.h"
+#include <scsl.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -12,7 +11,7 @@ String string_new_empty(size_t cap) {
   meta->len = 0;
   meta->cap = cap;
 
-  return (String)meta;
+  return (String)++meta;
 }
 
 String string_new_with_capacity(char *s, size_t cap) {
@@ -61,12 +60,12 @@ size_t string_capacity(String s) {
 }
 
 bool string_equal(String a, String b) {
-  struct string_meta *meta_a = META_FROM_STRING(a);
-  struct string_meta *meta_b = META_FROM_STRING(b);
+  size_t len_a = string_length(a);
+  size_t len_b = string_length(b);
 
-  if(meta_a->len != meta_b->len) return false;
+  if(len_a != len_b) return false;
 
-  for(size_t i = 0; i < meta_a->len; i++) {
+  for(size_t i = 0; i < len_a; i++) {
     if(a[i] != b[i]) return false;
   }
 
@@ -84,10 +83,6 @@ bool string_equal_to_c_string(String s, char *c) {
   return c[i] == 0;
 }
 
-String string_clone(String s) {
-  return string_clone_with_capacity(s, STRING_INITIAL_CAP);
-}
-
 String string_clone_with_capacity(String s, size_t cap) {
   size_t len = string_length(s);
   cap = len > cap ? len : cap;
@@ -101,28 +96,16 @@ String string_clone_with_capacity(String s, size_t cap) {
   return clone;
 }
 
+String string_clone(String s) {
+  return string_clone_with_capacity(s, STRING_INITIAL_CAP);
+}
+
 void string_grow_capacity(String *s, size_t cap) {
   if(string_capacity(*s) >= cap) return;
 
   String new = string_clone_with_capacity(*s, cap);
   string_destroy(*s);
   *s = new;
-}
-
-void string_copy(String dest, String src) {
-  struct string_meta *dest_meta = META_FROM_STRING(dest);
-  struct string_meta *src_meta = META_FROM_STRING(src);
-
-  if(dest_meta->cap >= src_meta->len) {
-    memcpy(dest, src, src_meta->len);
-    dest_meta->len = src_meta->len;
-    return;
-  }
-
-  /*string_grow_capacity(&dest, src_meta->len);*/
-
-  memcpy(dest, src, src_meta->len);
-  dest_meta->len = src_meta->len;
 }
 
 String string_concat(String a, String b) {
@@ -140,10 +123,69 @@ String string_concat(String a, String b) {
 }
 
 /* trims leading spaces from a string s, changing the original string */
-void string_trim_leading(String s);
+void string_trim_leading(String s) {
+  struct string_meta *meta = META_FROM_STRING(s);
+  size_t i = 0;
+  while(s[i] == ' ' && i < meta->len) i++;
 
-/* trims trailing spaces from a string s, changing the original string */
-void string_trim_trailing(String s);
+  size_t initial_len = meta->len;
 
-/* trims leading and trailing spaces from a string s, changing the original string */
-void string_trim(String s);
+  meta->len -= i;
+
+  size_t j = 0;
+  while(i < initial_len) {
+    s[j++] = s[i++];
+  }
+}
+
+void string_trim_trailing(String s) {
+  struct string_meta *meta = META_FROM_STRING(s);
+  size_t i = meta->len - 1;
+  while(s[i] == ' ' && i >= 0) i--;
+
+  meta->len = i + 1;
+}
+
+void string_trim(String s) {
+  string_trim_trailing(s);
+  string_trim_leading(s);
+}
+
+int32_t string_index_of(String s, char c, size_t start) {
+  for(size_t i = start; i < string_length(s); i++) {
+    if(s[i] == c) return i;
+  }
+
+  return -1;
+}
+
+int32_t string_index_of_any(String s, char *c, size_t start, char *which) {
+  for(size_t i = start; i < string_length(s); i++) {
+    char *t = c;
+    while(*t != 0) {
+      if(s[i] == *t) {
+        if(which != NULL) {
+          *which = *t;
+        }
+        return i;
+      }
+      t++;
+    }
+  }
+
+  return -1;
+}
+
+String string_substring(String s, size_t start, size_t end) {
+  size_t len = string_length(s);
+  if(end > len) end = len;
+  if(start > end) return string_new_empty(0);
+
+  String sub = string_new_with_capacity(NULL, end - start);
+  memcpy(sub, s + start, end - start);
+  struct string_meta *meta = META_FROM_STRING(sub);
+  meta->len = end - start;
+
+  return sub;
+}
+

@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifndef STRING_INITIAL_CAP
   #define STRING_INITIAL_CAP 64
@@ -51,8 +52,8 @@ bool string_equal_to_c_string(String s, char *c);
 /* clones the provided string s and returns a new string */
 String string_clone(String s);
 
-/* copies the provided string src into dest */
-void string_copy(String dest, String src);
+/* clones the provided string s and returns a new string with capacity cap */
+String string_clone_with_capacity(String s, size_t cap);
 
 /* concatinates two strings a and b and returns it as a new allocated string */
 String string_concat(String a, String b);
@@ -65,3 +66,14 @@ void string_trim_trailing(String s);
 
 /* trims leading and trailing spaces from a string s, changing the original string */
 void string_trim(String s);
+
+/* find first occurrence of c in string s after start, -1 for no such char in the string */
+int32_t string_index_of(String s, char c, size_t start);
+
+/* find any char specified in a c null-terminated string c;
+ * returning the index and which char was found in *which pointer; NULL to dismiss */
+int32_t string_index_of_any(String s, char *c, size_t start, char *which);
+
+/* returns a new substring starting at start index and until end (not inlcuding end) */
+String string_substring(String s, size_t start, size_t end);
+

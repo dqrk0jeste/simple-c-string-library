@@ -1,5 +1,4 @@
-#include "scsl.h"
-#include "scsl_internal.h"
+#include <scsl.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -29,7 +28,7 @@ void test_string_creation_equality() {
 
   String b = string_new_with_capacity("this is another string", 1);
 
-  ASSERT(string_capacity(b) >= string_length(b));
+  ASSERT(string_capacity(b) == string_length(b));
 
   ASSERT(string_equal(a, a));
   ASSERT(string_equal(b, b));
@@ -47,6 +46,7 @@ void test_string_creation_equality() {
   string_destroy(a);
   string_destroy(b);
   string_destroy(c);
+  string_destroy(d);
 }
 
 void test_string_cloning() {
@@ -62,7 +62,7 @@ void test_string_cloning() {
 
   ASSERT(string_equal(a, c));
   ASSERT(string_length(c) == 19);
-  ASSERT(string_capacity(c) >= string_length(c));
+  ASSERT(string_capacity(c) == 19);
 
   string_destroy(a);
   string_destroy(b);
@@ -76,8 +76,8 @@ void test_string_concatination() {
 
   String foobar = string_concat(foo, bar);
 
-  ASSERT(string_equal_to_c_string(foobar, "foobar"));
   ASSERT(string_length(foobar) == 6);
+  ASSERT(string_equal_to_c_string(foobar, "foobar"));
 
   string_destroy(foo);
   string_destroy(bar);
@@ -100,44 +100,94 @@ void test_string_growing() {
   string_destroy(s);
 }
 
-void test_string_copying() {
+void test_string_trimming() {
   PRINT_TEST_INFO;
-  String src = string_new("string to be copied");
-  String dest = string_new(NULL);
+  String s = string_new("       string with spaces");
+  string_trim_leading(s);
 
-  string_copy(dest, src);
+  ASSERT(string_length(s) == 18);
+  ASSERT(string_equal_to_c_string(s, "string with spaces"));
 
-  ASSERT(string_length(dest) == string_length(src));
-  ASSERT(string_capacity(dest) >= string_length(dest));
-  ASSERT(string_equal(src, dest));
+  string_destroy(s);
 
-  string_destroy(src);
-  string_destroy(dest);
+  s = string_new("string with spaces          ");
+  string_trim_trailing(s);
 
-  String src2 = string_new("wow, string to be copied again");
-  String dest2 = string_new_with_capacity("", 10);
+  ASSERT(string_length(s) == 18);
+  ASSERT(string_equal_to_c_string(s, "string with spaces"));
 
-  string_copy(dest2, src2);
+  s = string_new("               string with spaces          ");
+  string_trim(s);
 
-  string_print(dest2);
-  putchar('\n');
-  
-  ASSERT(string_length(dest2) == string_length(src2));
-  /*ASSERT(string_capacity(dest2) >= string_length(dest2));*/
-  ASSERT(string_equal(src2, dest2));
+  ASSERT(string_length(s) == 18);
+  ASSERT(string_equal_to_c_string(s, "string with spaces"));
 
-  string_destroy(src2);
-  string_destroy(dest2);
+  string_destroy(s);
+
+  s = string_new("                ");
+  string_trim_leading(s);
+
+  ASSERT(string_length(s) == 0);
+  ASSERT(string_equal_to_c_string(s, ""));
+
+  string_destroy(s);
+
+  s = string_new("                ");
+  string_trim_trailing(s);
+
+  ASSERT(string_length(s) == 0);
+  ASSERT(string_equal_to_c_string(s, ""));
+
+  string_destroy(s);
+
+  s = string_new("                ");
+  string_trim(s);
+
+  ASSERT(string_length(s) == 0);
+  ASSERT(string_equal_to_c_string(s, ""));
+
+  string_destroy(s);
+}
+
+void test_string_index_of() {
+  String s = string_new("looking for char k");
+  ASSERT(string_index_of(s, 'k', 2) == 3);
+  ASSERT(string_index_of(s, 'k', 5) == 17);
+  ASSERT(string_index_of(s, 'k', 123) == -1);
+  ASSERT(string_index_of(s, 'z', 0) == -1);
+}
+
+void test_string_index_of_any() {
+  String s = string_new("one, two, three");
+
+  ASSERT(string_index_of(s, ',', 0) == 3);
+  ASSERT(string_index_of(s, ',', 4) == 8);
+  ASSERT(string_index_of_any(s, "we", 6, NULL) == 6);
+
+  char c;
+  ASSERT(string_index_of_any(s, "nr", 0, &c) == 1);
+  ASSERT(c == 'n');
+}
+
+void test_substrings() {
+  String s = string_new("abcdefghijk");
+  ASSERT(string_equal_to_c_string(string_substring(s, 9, 5), ""));
+  ASSERT(string_equal_to_c_string(string_substring(s, 2, 5), "cde"));
+  ASSERT(string_equal(string_substring(s, 0, string_length(s)), s));
+  ASSERT(string_equal_to_c_string(string_substring(s, 2, 123), "cdefghijk"));
 }
 
 int main(int argc, char *argv[]) {
   printf("\nTESTING...\n");
 
   test_string_creation_equality();
-  /*test_string_cloning();*/
-  /*test_string_concatination();*/
-  /*test_string_growing();*/
-  /*test_string_copying();*/
+  test_string_cloning();
+  test_string_concatination();
+  test_string_growing();
+  test_string_trimming();
+  test_string_index_of();
+  test_string_index_of_any();
+  test_substrings();
 
   printf("\nALL TESTS PASSED\n");
   return 0;
