@@ -1,26 +1,26 @@
 # CSSL
 simple string library for the c programming language
 
-# building
+## building
 ```
 make
 ```
 
-# testing
+## testing
 ```
 make test
 ```
 
-# installing
+## installing
 ```
 make install
 ```
 
-# usage
+## usage
 ```c
 #include <cssl.h>
 ```
 > add linking flag `-lcssl` when compiling
 
-# docs
+## docs
 read the header files
